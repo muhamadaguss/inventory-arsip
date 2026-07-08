@@ -65,6 +65,8 @@ The objective of this application is to build a **hands-free, voice-activated in
 - **NFR-1 (Language Support):** The system's STT and TTS engines must strictly operate with Indonesian locales (`id-ID`).
 - **NFR-2 (Latency):** Voice transcription to initial database query response must take less than 1.5 seconds under typical network conditions.
 - **NFR-3 (Accessibility):** High-contrast UI suitable for dimly lit physical record rooms or warehouses.
+- **NFR-4 (Responsive Design):** The UI MUST adapt cleanly across mobile and desktop viewports — mobile is the primary target (archivists carrying a phone/tablet through shelf rows), desktop remains fully usable for Admin data-entry tasks.
+- **NFR-5 (Installable PWA):** The frontend MUST be installable as a Progressive Web App (web app manifest, icons, "Add to Home Screen") so it can be launched full-screen like a native mobile app. Offline capability is explicitly out of scope for this version (see Section 6) — voice search and TTS depend on the backend API and Web Speech API, both of which require an active connection regardless of app-shell caching.
 
 ---
 
@@ -72,6 +74,7 @@ The objective of this application is to build a **hands-free, voice-activated in
 
 - IoT integration (smart LED shelf guidance systems).
 - Mobile Offline standalone STT/TTS models (Initial version assumes active web/local server connectivity)
+- Offline-capable app shell (service worker caching for offline use) — the PWA in this version is installable only, not offline-first.
 
 ---
 

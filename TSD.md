@@ -38,6 +38,8 @@ The system follows a standard Client-Server architecture: a Next.js web frontend
 - **Voice Transcription:** Web Speech API (`SpeechRecognition`) for zero-cost client-side Indonesian speech recognition.
 - **Voice Generation:** Web Speech API (`SpeechSynthesis`) utilizing the `id-ID` locale.
 - Fallback to a standard text input when `SpeechRecognition`/`speechSynthesis` are unsupported (see Section 7).
+- **Styling:** Tailwind CSS for mobile-first responsive layout (see Section 7.1).
+- **PWA:** installable web app manifest + minimal non-caching service worker (see Section 7.1) — no offline support in this version.
 
 #### Backend & Database (Core Engine)
 
@@ -214,6 +216,30 @@ LIMIT 5;
 - On mount, the frontend checks `window.SpeechRecognition || window.webkitSpeechRecognition`.
 - If absent: hide the mic button, render a standard text `<input>` search box that posts the typed string to the same `/api/v1/archive/search` endpoint (the backend parsing pipeline treats typed and transcribed text identically).
 - Independently, check `window.speechSynthesis` for TTS; if absent, render the response as text only (no audio playback), search functionality is unaffected either way.
+
+---
+
+### 7.1 Responsive Design & PWA (Installable, No Offline)
+
+- **Responsive breakpoints:** mobile-first CSS with a single desktop breakpoint (e.g., Tailwind's default `md: 768px`). Below the breakpoint: single-column layout, full-width giant result text (PRD FR-4.1), bottom-anchored mic button for thumb reach. At/above the breakpoint: same content in a centered, max-width layout usable at a desk.
+- **Web App Manifest:** `public/manifest.json` in the Next.js app —
+  ```json
+  {
+    "name": "Arsip Perkara Suara",
+    "short_name": "ArsipSuara",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0B1220",
+    "theme_color": "#2C4A6E",
+    "icons": [
+      { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+      { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    ]
+  }
+  ```
+- **Linking the manifest:** referenced via `<link rel="manifest" href="/manifest.json">` and a `theme-color` meta tag in the Next.js root layout metadata (Next.js App Router's `metadata` export, not a manually-authored `<head>`).
+- **Installability without offline:** a minimal service worker is registered solely to satisfy browser installability criteria (Chrome/Edge require an active service worker for the install prompt); its fetch handler passes every request straight to the network with no caching (`event.respondWith(fetch(event.request))`) — this is intentionally not a caching/offline strategy, per PRD Section 6.
+- **No new heavy dependency:** achieved with a hand-written ~10-line service worker and Next.js's built-in metadata API — not `next-pwa` or Workbox, which are built for offline-first caching this version explicitly excludes.
 
 ---
 

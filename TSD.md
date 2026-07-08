@@ -54,27 +54,31 @@ The system follows a standard Client-Server architecture: a Next.js web frontend
 
 A relational schema optimized to decouple case attributes from physical metadata inventory tracking.
 
+**Note on types:** `role` and `status` are modeled as native PostgreSQL `ENUM` types (via Prisma's `enum`), not `VARCHAR` + `CHECK` — an enum is rejected by the database itself for any value outside the set, which is stronger than a `CHECK` constraint and fits both fields' fixed, rarely-changing vocabulary. Free-text columns (`rack_name`, `case_number_raw`, `case_number_clean`, `case_type`, `file_position_number`) are modeled as unconstrained `TEXT` rather than length-capped `VARCHAR(n)` — Postgres treats `TEXT` and `VARCHAR(n)` identically in storage and performance, and skipping a length cap avoids an arbitrary limit on real case numbers/party name lists that could otherwise silently truncate data. Length validation, where needed, belongs at the DTO/application layer (see Section 6), not the DB schema.
+
 ```sql
 -- 1. Table: Shelves (Physical Metadata Layout)
 CREATE TABLE shelves (
     id SERIAL PRIMARY KEY,
-    rack_name VARCHAR(50) NOT NULL,       -- e.g., 'Rak A', 'Rak B'
+    rack_name TEXT NOT NULL,              -- e.g., 'Rak A', 'Rak B'
     row_number INT NOT NULL,              -- e.g., 1, 2, 3, 4
     slot_number INT,                      -- Optional finer granular breakdown
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TYPE "CaseStatus" AS ENUM ('Available', 'Borrowed');
+
 -- 2. Table: Cases (Arsip Sidang Perkara)
 CREATE TABLE court_cases (
     id SERIAL PRIMARY KEY,
-    case_number_raw VARCHAR(100) NOT NULL, -- Original formatted string e.g., '120/Pdt.G/2026/PN.Bks'
-    case_number_clean VARCHAR(100),       -- Normalized string for fallback exact matching: '120 Pdt G 2026'
-    case_type VARCHAR(50) NOT NULL,        -- e.g., 'Pdt.G', 'Pid.B'
+    case_number_raw TEXT NOT NULL,        -- Original formatted string e.g., '120/Pdt.G/2026/PN.Bks'
+    case_number_clean TEXT,               -- Normalized string for fallback exact matching: '120 Pdt G 2026'
+    case_type TEXT NOT NULL,               -- e.g., 'Pdt.G', 'Pid.B'
     year INT NOT NULL,                     -- e.g., 2026
     parties_involved TEXT NOT NULL,       -- Full names of suspects, claimants, defendants
     shelf_id INT REFERENCES shelves(id),   -- Foreign key mapping to physical rack
-    file_position_number VARCHAR(50),     -- Exact identifier inside row, e.g., 'No. 05'
-    status VARCHAR(20) DEFAULT 'Available',-- 'Available' (Green UI), 'Borrowed' (Red UI)
+    file_position_number TEXT,            -- Exact identifier inside row, e.g., 'No. 05'
+    status "CaseStatus" NOT NULL DEFAULT 'Available', -- 'Available' (Green UI), 'Borrowed' (Red UI)
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -83,12 +87,14 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE INDEX idx_cases_fuzzy ON court_cases USING gin (parties_involved gin_trgm_ops);
 CREATE INDEX idx_cases_number_clean ON court_cases USING gin (case_number_clean gin_trgm_ops);
 
+CREATE TYPE "Role" AS ENUM ('admin', 'petugas');
+
 -- 3. Table: Users (Auth & Role Control)
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'petugas')),
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role "Role" NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
 ```

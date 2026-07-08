@@ -2,8 +2,13 @@ import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RolesGuard } from './roles.guard';
 
-function makeContext(userRole: string | undefined, requiredRoles: string[] | undefined) {
-  const reflector = { getAllAndOverride: () => requiredRoles } as unknown as Reflector;
+function makeContext(
+  userRole: string | undefined,
+  requiredRoles: string[] | undefined,
+) {
+  const reflector = {
+    getAllAndOverride: () => requiredRoles,
+  } as unknown as Reflector;
   const guard = new RolesGuard(reflector);
   const context = {
     switchToHttp: () => ({

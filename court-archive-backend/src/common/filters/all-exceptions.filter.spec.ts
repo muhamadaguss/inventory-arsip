@@ -24,10 +24,19 @@ describe('AllExceptionsFilter', () => {
     const filter = new AllExceptionsFilter();
     const { host, status, json } = makeHost();
 
-    filter.catch(new HttpException('Invalid username or password', HttpStatus.UNAUTHORIZED), host);
+    filter.catch(
+      new HttpException(
+        'Invalid username or password',
+        HttpStatus.UNAUTHORIZED,
+      ),
+      host,
+    );
 
     expect(status).toHaveBeenCalledWith(401);
-    expect(json).toHaveBeenCalledWith({ statusCode: 401, message: 'Invalid username or password' });
+    expect(json).toHaveBeenCalledWith({
+      statusCode: 401,
+      message: 'Invalid username or password',
+    });
   });
 
   it('masks unknown errors with a generic message outside development', () => {
@@ -35,9 +44,15 @@ describe('AllExceptionsFilter', () => {
     const filter = new AllExceptionsFilter();
     const { host, status, json } = makeHost();
 
-    filter.catch(new Error('Prisma: connection string malformed at column 14'), host);
+    filter.catch(
+      new Error('Prisma: connection string malformed at column 14'),
+      host,
+    );
 
     expect(status).toHaveBeenCalledWith(500);
-    expect(json).toHaveBeenCalledWith({ statusCode: 500, message: 'Internal server error' });
+    expect(json).toHaveBeenCalledWith({
+      statusCode: 500,
+      message: 'Internal server error',
+    });
   });
 });

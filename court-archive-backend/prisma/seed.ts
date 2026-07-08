@@ -12,7 +12,9 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   if (process.env.NODE_ENV === 'production') {
-    throw new Error('Refusing to seed demo credentials in production (NODE_ENV=production).');
+    throw new Error(
+      'Refusing to seed demo credentials in production (NODE_ENV=production).',
+    );
   }
 
   const adminHash = await bcrypt.hash('admin123', 10);
@@ -27,7 +29,11 @@ async function main() {
   await prisma.user.upsert({
     where: { username: 'petugas1' },
     update: {},
-    create: { username: 'petugas1', passwordHash: petugasHash, role: 'petugas' },
+    create: {
+      username: 'petugas1',
+      passwordHash: petugasHash,
+      role: 'petugas',
+    },
   });
 }
 

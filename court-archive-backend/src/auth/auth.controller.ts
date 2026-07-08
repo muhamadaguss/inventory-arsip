@@ -1,4 +1,11 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -11,7 +18,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(@Body() dto: LoginDto) {
-    const user = await this.authService.validateUser(dto.username, dto.password);
+    const user = await this.authService.validateUser(
+      dto.username,
+      dto.password,
+    );
     if (!user) {
       throw new UnauthorizedException('Invalid username or password');
     }

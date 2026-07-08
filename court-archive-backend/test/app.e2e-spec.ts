@@ -15,7 +15,13 @@ describe('Auth + RolesGuard (e2e)', () => {
 
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1');
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
 
     const adminLogin = await request(app.getHttpServer())
@@ -34,7 +40,9 @@ describe('Auth + RolesGuard (e2e)', () => {
   });
 
   it('rejects unauthenticated requests with 401', async () => {
-    await request(app.getHttpServer()).get('/api/v1/demo/admin-only').expect(401);
+    await request(app.getHttpServer())
+      .get('/api/v1/demo/admin-only')
+      .expect(401);
   });
 
   it('rejects petugas role with 403', async () => {
@@ -50,6 +58,8 @@ describe('Auth + RolesGuard (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    expect(response.body).toEqual({ message: 'You are an authenticated admin.' });
+    expect(response.body).toEqual({
+      message: 'You are an authenticated admin.',
+    });
   });
 });

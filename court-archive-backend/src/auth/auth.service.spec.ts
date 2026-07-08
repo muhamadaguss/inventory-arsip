@@ -15,7 +15,10 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: PrismaService, useValue: prisma },
-        { provide: JwtService, useValue: new JwtService({ secret: 'test-secret' }) },
+        {
+          provide: JwtService,
+          useValue: new JwtService({ secret: 'test-secret' }),
+        },
       ],
     }).compile();
 
@@ -64,7 +67,11 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('returns a signed token and the user role', () => {
-      const result = service.login({ id: 1, username: 'clerk1', role: 'petugas' });
+      const result = service.login({
+        id: 1,
+        username: 'clerk1',
+        role: 'petugas',
+      });
 
       expect(result.role).toBe('petugas');
       expect(typeof result.token).toBe('string');

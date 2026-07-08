@@ -19,10 +19,20 @@ describe('AuthController', () => {
   });
 
   it('returns a token and role on valid credentials', async () => {
-    authService.validateUser.mockResolvedValue({ id: 1, username: 'clerk1', role: 'petugas' });
-    authService.login.mockReturnValue({ token: 'signed.jwt.token', role: 'petugas' });
+    authService.validateUser.mockResolvedValue({
+      id: 1,
+      username: 'clerk1',
+      role: 'petugas',
+    });
+    authService.login.mockReturnValue({
+      token: 'signed.jwt.token',
+      role: 'petugas',
+    });
 
-    const result = await controller.login({ username: 'clerk1', password: 'correct' });
+    const result = await controller.login({
+      username: 'clerk1',
+      password: 'correct',
+    });
 
     expect(authService.validateUser).toHaveBeenCalledWith('clerk1', 'correct');
     expect(result).toEqual({ token: 'signed.jwt.token', role: 'petugas' });
@@ -31,8 +41,8 @@ describe('AuthController', () => {
   it('throws UnauthorizedException on invalid credentials', async () => {
     authService.validateUser.mockResolvedValue(null);
 
-    await expect(controller.login({ username: 'clerk1', password: 'wrong' })).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(
+      controller.login({ username: 'clerk1', password: 'wrong' }),
+    ).rejects.toThrow(UnauthorizedException);
   });
 });

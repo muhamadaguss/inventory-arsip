@@ -1,13 +1,54 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  admin
+  petugas
+}
+
+enum CaseStatus {
+  Available
+  Borrowed
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Shelf {
+  id         Int         @id @default(autoincrement())
+  rackName   String      @map("rack_name")
+  rowNumber  Int         @map("row_number")
+  slotNumber Int?        @map("slot_number")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  cases      CourtCase[]
+
+  @@map("shelves")
+}
+
+model CourtCase {
+  id                 Int        @id @default(autoincrement())
+  caseNumberRaw      String     @map("case_number_raw")
+  caseNumberClean    String?    @map("case_number_clean")
+  caseType           String     @map("case_type")
+  year               Int
+  partiesInvolved    String     @map("parties_involved")
+  shelfId            Int?       @map("shelf_id")
+  shelf              Shelf?     @relation(fields: [shelfId], references: [id])
+  filePositionNumber String?    @map("file_position_number")
+  status             CaseStatus @default(Available)
+  createdAt          DateTime   @default(now()) @map("created_at")
+
+  @@map("court_cases")
 }

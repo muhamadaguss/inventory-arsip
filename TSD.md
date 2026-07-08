@@ -4,11 +4,11 @@
 
 ### 0. Repository Structure
 
-Two separate git repositories:
-- `court-archive-frontend` — Next.js app.
-- `court-archive-backend` — NestJS API.
+Monorepo: a single git repository (this one) containing both apps as subfolders, so all work is visible/trackable in one workspace:
+- `court-archive-backend/` — NestJS API (its own `package.json`, own dependency tree).
+- `court-archive-frontend/` — Next.js app (its own `package.json`, own dependency tree).
 
-They communicate purely over HTTP; no shared code/package between them.
+The two apps remain independent at the code level — no shared package, no cross-imports — communicating purely over HTTP. The monorepo groups them for visibility only; it does not couple their builds or dependencies.
 
 ---
 

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { parse } from 'csv-parse/sync';
+import ExcelJS from 'exceljs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ImportResult, RejectedRow } from './dto/import-result.dto';
 
@@ -13,12 +14,46 @@ interface ParsedRow {
   file_position_number?: string;
 }
 
+const EXCEL_COLUMNS = [
+  'case_number_raw',
+  'case_type',
+  'year',
+  'parties_involved',
+  'rack_name',
+  'row_number',
+  'file_position_number',
+] as const;
+
 @Injectable()
 export class CaseImportService {
   constructor(private prisma: PrismaService) {}
 
   async importFromCsv(buffer: Buffer): Promise<ImportResult> {
     const rows: ParsedRow[] = parse(buffer, { columns: true, skip_empty_lines: true });
+    return this.importRows(rows);
+  }
+
+  async importFromExcel(buffer: Buffer): Promise<ImportResult> {
+    const workbook = new ExcelJS.Workbook();
+    // exceljs@4's bundled type defs predate @types/node's generic `Buffer<T>`,
+    // so `load` reports a spurious type mismatch even though the runtime buffer is valid.
+    await workbook.xlsx.load(buffer as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+    const worksheet = workbook.worksheets[0];
+
+    const rows: ParsedRow[] = [];
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        return;
+      }
+      const parsed: ParsedRow = {};
+      EXCEL_COLUMNS.forEach((column, index) => {
+        const cellValue = row.getCell(index + 1).value;
+        parsed[column] =
+          typeof cellValue === 'string' || typeof cellValue === 'number' ? String(cellValue) : undefined;
+      });
+      rows.push(parsed);
+    });
+
     return this.importRows(rows);
   }
 

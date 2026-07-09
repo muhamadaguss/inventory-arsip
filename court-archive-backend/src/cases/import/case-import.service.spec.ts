@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import ExcelJS from 'exceljs';
 import { CaseImportService } from './case-import.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -102,5 +103,49 @@ describe('CaseImportService', () => {
     expect(prisma.courtCase.create).toHaveBeenCalledTimes(1);
     expect(result.importedCount).toBe(1);
     expect(result.rejectedRows).toEqual([{ row: 1, reason: 'Missing case_number_raw' }]);
+  });
+
+  describe('importFromExcel', () => {
+    it('imports a valid row from an .xlsx buffer', async () => {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Cases');
+      sheet.addRow(['case_number_raw', 'case_type', 'year', 'parties_involved', 'rack_name', 'row_number', 'file_position_number']);
+      sheet.addRow(['130/Pdt.G/2026/PN.Bks', 'Pdt.G', 2026, 'Dewi Lestari', 'Rak B', 2, 'No. 10']);
+      const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
+
+      prisma.shelf.findFirst.mockResolvedValue({ id: 3, rackName: 'Rak B', rowNumber: 2 });
+      prisma.courtCase.create.mockResolvedValue({ id: 4 });
+
+      const result = await service.importFromExcel(buffer);
+
+      expect(prisma.shelf.findFirst).toHaveBeenCalledWith({ where: { rackName: 'Rak B', rowNumber: 2 } });
+      expect(prisma.courtCase.create).toHaveBeenCalledWith({
+        data: {
+          caseNumberRaw: '130/Pdt.G/2026/PN.Bks',
+          caseType: 'Pdt.G',
+          year: 2026,
+          partiesInvolved: 'Dewi Lestari',
+          shelfId: 3,
+          filePositionNumber: 'No. 10',
+        },
+      });
+      expect(result).toEqual({ importedCount: 1, rejectedRows: [] });
+    });
+
+    it('rejects a row missing case_number_raw from an .xlsx buffer', async () => {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Cases');
+      sheet.addRow(['case_number_raw', 'case_type', 'year', 'parties_involved', 'rack_name', 'row_number', 'file_position_number']);
+      sheet.addRow(['', 'Pdt.G', 2026, 'Missing Number', '', '', '']);
+      const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
+
+      const result = await service.importFromExcel(buffer);
+
+      expect(prisma.courtCase.create).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        importedCount: 0,
+        rejectedRows: [{ row: 1, reason: 'Missing case_number_raw' }],
+      });
+    });
   });
 });

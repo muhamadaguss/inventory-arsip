@@ -52,3 +52,51 @@ describe('NumberWordsService.parse', () => {
     expect(result).toEqual({ value: null, consumedTokens: 0 });
   });
 });
+
+describe('NumberWordsService.toWords', () => {
+  let service: NumberWordsService;
+
+  beforeEach(() => {
+    service = new NumberWordsService();
+  });
+
+  it('converts single digits', () => {
+    expect(service.toWords(5)).toBe('lima');
+  });
+
+  it('converts 10 as "sepuluh"', () => {
+    expect(service.toWords(10)).toBe('sepuluh');
+  });
+
+  it('converts 11 as "sebelas"', () => {
+    expect(service.toWords(11)).toBe('sebelas');
+  });
+
+  it('converts teens as "X belas"', () => {
+    expect(service.toWords(13)).toBe('tiga belas');
+  });
+
+  it('converts round tens as "X puluh"', () => {
+    expect(service.toWords(40)).toBe('empat puluh');
+  });
+
+  it('converts tens with a unit as "X puluh Y"', () => {
+    expect(service.toWords(45)).toBe('empat puluh lima');
+  });
+
+  it('converts exactly 100 as "seratus"', () => {
+    expect(service.toWords(100)).toBe('seratus');
+  });
+
+  it('converts hundreds with remainder', () => {
+    expect(service.toWords(120)).toBe('seratus dua puluh');
+  });
+
+  it('converts 2026 as "dua ribu dua puluh enam"', () => {
+    expect(service.toWords(2026)).toBe('dua ribu dua puluh enam');
+  });
+
+  it('converts 0 as "kosong"', () => {
+    expect(service.toWords(0)).toBe('kosong');
+  });
+});

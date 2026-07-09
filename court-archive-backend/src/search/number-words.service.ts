@@ -17,6 +17,8 @@ const TEENS: Record<string, number> = {
   sebelas: 11,
 };
 
+const UNIT_WORDS = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan'];
+
 export interface ParseResult {
   value: number | null;
   consumedTokens: number;
@@ -91,5 +93,48 @@ export class NumberWordsService {
     }
 
     return null;
+  }
+
+  toWords(n: number): string {
+    if (n === 0) {
+      return 'kosong';
+    }
+
+    const parts: string[] = [];
+    let remaining = n;
+
+    if (remaining >= 1000) {
+      const thousands = Math.floor(remaining / 1000);
+      parts.push(thousands === 1 ? 'seribu' : `${UNIT_WORDS[thousands]} ribu`);
+      remaining %= 1000;
+    }
+
+    if (remaining >= 100) {
+      const hundreds = Math.floor(remaining / 100);
+      parts.push(hundreds === 1 ? 'seratus' : `${UNIT_WORDS[hundreds]} ratus`);
+      remaining %= 100;
+    }
+
+    if (remaining === 10) {
+      parts.push('sepuluh');
+      remaining = 0;
+    } else if (remaining === 11) {
+      parts.push('sebelas');
+      remaining = 0;
+    } else if (remaining >= 10 && remaining < 20) {
+      parts.push(`${UNIT_WORDS[remaining - 10]} belas`);
+      remaining = 0;
+    } else if (remaining >= 20) {
+      const tens = Math.floor(remaining / 10);
+      parts.push(`${UNIT_WORDS[tens]} puluh`);
+      remaining %= 10;
+      if (remaining > 0) {
+        parts.push(UNIT_WORDS[remaining]);
+      }
+    } else if (remaining > 0) {
+      parts.push(UNIT_WORDS[remaining]);
+    }
+
+    return parts.join(' ');
   }
 }

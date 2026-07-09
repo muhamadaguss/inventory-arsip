@@ -47,4 +47,17 @@ describe('StatusToggleButton', () => {
     );
     expect(onToggled).toHaveBeenCalledWith('Borrowed');
   });
+
+  it('shows an error message and does not call onToggled when patch fails', async () => {
+    (apiClient.patch as jest.Mock).mockRejectedValue(new Error('Forbidden'));
+    const onToggled = jest.fn();
+    renderWithStore(
+      <StatusToggleButton caseId={42} currentStatus="Available" onToggled={onToggled} />,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: /tandai dipinjam/i }));
+
+    expect(await screen.findByText('Forbidden')).toBeInTheDocument();
+    expect(onToggled).not.toHaveBeenCalled();
+  });
 });

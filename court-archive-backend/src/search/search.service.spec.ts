@@ -179,12 +179,24 @@ describe('SearchService.buildTtsPayload', () => {
   });
 
   it('states the count and asks for more detail when there are multiple matches', () => {
-    const payload = service.buildTtsPayload([singleMatch, { ...singleMatch, id: 2 }]);
-    expect(payload).toBe('Ditemukan dua arsip. Mohon sebutkan detail yang lebih spesifik.');
+    const payload = service.buildTtsPayload([
+      singleMatch,
+      { ...singleMatch, id: 2 },
+    ]);
+    expect(payload).toBe(
+      'Ditemukan dua arsip. Mohon sebutkan detail yang lebih spesifik.',
+    );
   });
 
   it('handles a match with no shelf assigned', () => {
-    const payload = service.buildTtsPayload([{ ...singleMatch, rackName: null, rowNumber: null, filePositionNumber: null }]);
+    const payload = service.buildTtsPayload([
+      {
+        ...singleMatch,
+        rackName: null,
+        rowNumber: null,
+        filePositionNumber: null,
+      },
+    ]);
     expect(payload).toBe(
       'Arsip ditemukan. Perkara Pid.B nomor empat puluh lima tahun dua ribu dua puluh enam. Lokasi rak belum ditentukan.',
     );

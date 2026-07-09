@@ -5,6 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { ShelvesModule } from './shelves/shelves.module';
 import { CasesModule } from './cases/cases.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { CasesModule } from './cases/cases.module';
     AuthModule,
     ShelvesModule,
     CasesModule,
+    SearchModule,
   ],
   controllers: [],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

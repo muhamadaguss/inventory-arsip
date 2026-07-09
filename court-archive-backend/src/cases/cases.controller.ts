@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   UseGuards,
@@ -17,6 +18,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CasesService } from './cases.service';
 import { CreateCaseDto } from './dto/create-case.dto';
 import { UpdateCaseDto } from './dto/update-case.dto';
+import { UpdateCaseStatusDto } from './dto/update-case-status.dto';
 
 @Controller('archive/cases')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -45,6 +47,12 @@ export class CasesController {
   @Roles('admin')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCaseDto) {
     return this.casesService.update(id, dto);
+  }
+
+  @Patch(':id/status')
+  @Roles('admin', 'petugas')
+  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCaseStatusDto) {
+    return this.casesService.updateStatus(id, dto.status);
   }
 
   @Delete(':id')

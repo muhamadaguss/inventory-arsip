@@ -102,4 +102,17 @@ describe('CasesService', () => {
 
     expect(prisma.courtCase.delete).toHaveBeenCalledWith({ where: { id: 1 } });
   });
+
+  it('updates only the status field', async () => {
+    const updated = { ...sampleCase, status: 'Borrowed' };
+    prisma.courtCase.update.mockResolvedValue(updated);
+
+    const result = await service.updateStatus(1, 'Borrowed');
+
+    expect(prisma.courtCase.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { status: 'Borrowed' },
+    });
+    expect(result.status).toBe('Borrowed');
+  });
 });

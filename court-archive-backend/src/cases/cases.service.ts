@@ -27,6 +27,10 @@ export class CasesService {
     return this.prisma.courtCase.update({ where: { id }, data: dto });
   }
 
+  updateStatus(id: number, status: 'Available' | 'Borrowed') {
+    return this.prisma.courtCase.update({ where: { id }, data: { status } });
+  }
+
   async remove(id: number): Promise<void> {
     await this.prisma.courtCase.delete({ where: { id } });
   }

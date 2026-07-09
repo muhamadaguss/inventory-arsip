@@ -9,6 +9,7 @@ describe('CasesController', () => {
     findAll: jest.Mock;
     findOne: jest.Mock;
     update: jest.Mock;
+    updateStatus: jest.Mock;
     remove: jest.Mock;
   };
 
@@ -18,6 +19,7 @@ describe('CasesController', () => {
       findAll: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
+      updateStatus: jest.fn(),
       remove: jest.fn(),
     };
 
@@ -72,5 +74,14 @@ describe('CasesController', () => {
     await controller.remove(1);
 
     expect(service.remove).toHaveBeenCalledWith(1);
+  });
+
+  it('updates case status via the service', async () => {
+    service.updateStatus.mockResolvedValue({ id: 1, status: 'Borrowed' });
+
+    const result = await controller.updateStatus(1, { status: 'Borrowed' });
+
+    expect(service.updateStatus).toHaveBeenCalledWith(1, 'Borrowed');
+    expect(result.status).toBe('Borrowed');
   });
 });

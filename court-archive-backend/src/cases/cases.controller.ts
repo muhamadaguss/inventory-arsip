@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,20 +11,29 @@ import {
   Patch,
   Post,
   Put,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CasesService } from './cases.service';
+import { CaseImportService } from './import/case-import.service';
 import { CreateCaseDto } from './dto/create-case.dto';
 import { UpdateCaseDto } from './dto/update-case.dto';
 import { UpdateCaseStatusDto } from './dto/update-case-status.dto';
 
+const EXCEL_MIMETYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
 @Controller('archive/cases')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CasesController {
-  constructor(private casesService: CasesService) {}
+  constructor(
+    private casesService: CasesService,
+    private caseImportService: CaseImportService,
+  ) {}
 
   @Post()
   @Roles('admin')
@@ -60,5 +70,27 @@ export class CasesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.casesService.remove(id);
+  }
+
+  @Post('import')
+  @Roles('admin')
+  @UseInterceptors(FileInterceptor('file'))
+  async importCases(@UploadedFile() file: Express.Multer.File) {
+    const isCsv = file.mimetype === 'text/csv';
+    const isExcel = file.mimetype === EXCEL_MIMETYPE;
+
+    if (!isCsv && !isExcel) {
+      throw new BadRequestException(`Unsupported file type: ${file.mimetype}`);
+    }
+
+    const result = isCsv
+      ? await this.caseImportService.importFromCsv(file.buffer)
+      : await this.caseImportService.importFromExcel(file.buffer);
+
+    return {
+      status: result.rejectedRows.length > 0 ? 'partial_success' : 'success',
+      imported_count: result.importedCount,
+      rejected_rows: result.rejectedRows,
+    };
   }
 }

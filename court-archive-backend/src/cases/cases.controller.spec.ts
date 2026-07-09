@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { CasesController } from './cases.controller';
 import { CasesService } from './cases.service';
+import { CaseImportService } from './import/case-import.service';
 
 describe('CasesController', () => {
   let controller: CasesController;
@@ -12,6 +13,7 @@ describe('CasesController', () => {
     updateStatus: jest.Mock;
     remove: jest.Mock;
   };
+  let importService: { importFromCsv: jest.Mock; importFromExcel: jest.Mock };
 
   beforeEach(async () => {
     service = {
@@ -22,10 +24,14 @@ describe('CasesController', () => {
       updateStatus: jest.fn(),
       remove: jest.fn(),
     };
+    importService = { importFromCsv: jest.fn(), importFromExcel: jest.fn() };
 
     const moduleRef = await Test.createTestingModule({
       controllers: [CasesController],
-      providers: [{ provide: CasesService, useValue: service }],
+      providers: [
+        { provide: CasesService, useValue: service },
+        { provide: CaseImportService, useValue: importService },
+      ],
     }).compile();
 
     controller = moduleRef.get(CasesController);
@@ -83,5 +89,60 @@ describe('CasesController', () => {
 
     expect(service.updateStatus).toHaveBeenCalledWith(1, 'Borrowed');
     expect(result.status).toBe('Borrowed');
+  });
+
+  describe('import', () => {
+    let importService: { importFromCsv: jest.Mock; importFromExcel: jest.Mock };
+
+    beforeEach(async () => {
+      importService = { importFromCsv: jest.fn(), importFromExcel: jest.fn() };
+
+      const moduleRef = await Test.createTestingModule({
+        controllers: [CasesController],
+        providers: [
+          { provide: CasesService, useValue: service },
+          { provide: CaseImportService, useValue: importService },
+        ],
+      }).compile();
+
+      controller = moduleRef.get(CasesController);
+    });
+
+    it('dispatches a .csv upload to importFromCsv', async () => {
+      importService.importFromCsv.mockResolvedValue({ importedCount: 2, rejectedRows: [] });
+      const file = { originalname: 'cases.csv', mimetype: 'text/csv', buffer: Buffer.from('data') } as Express.Multer.File;
+
+      const result = await controller.importCases(file);
+
+      expect(importService.importFromCsv).toHaveBeenCalledWith(file.buffer);
+      expect(result).toEqual({ status: 'success', imported_count: 2, rejected_rows: [] });
+    });
+
+    it('dispatches an .xlsx upload to importFromExcel', async () => {
+      importService.importFromExcel.mockResolvedValue({
+        importedCount: 1,
+        rejectedRows: [{ row: 2, reason: 'Missing case_number_raw' }],
+      });
+      const file = {
+        originalname: 'cases.xlsx',
+        mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        buffer: Buffer.from('data'),
+      } as Express.Multer.File;
+
+      const result = await controller.importCases(file);
+
+      expect(importService.importFromExcel).toHaveBeenCalledWith(file.buffer);
+      expect(result).toEqual({
+        status: 'partial_success',
+        imported_count: 1,
+        rejected_rows: [{ row: 2, reason: 'Missing case_number_raw' }],
+      });
+    });
+
+    it('throws BadRequestException for an unsupported file type', async () => {
+      const file = { originalname: 'cases.pdf', mimetype: 'application/pdf', buffer: Buffer.from('data') } as Express.Multer.File;
+
+      await expect(controller.importCases(file)).rejects.toThrow('Unsupported file type');
+    });
   });
 });

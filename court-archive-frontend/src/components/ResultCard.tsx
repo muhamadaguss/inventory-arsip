@@ -1,11 +1,16 @@
+'use client';
+
+import { useState } from 'react';
 import type { CaseResult } from '@/store/searchSlice';
+import { StatusToggleButton } from './StatusToggleButton';
 
 interface ResultCardProps {
   result: CaseResult;
 }
 
 export function ResultCard({ result }: ResultCardProps) {
-  const bgClass = result.status === 'Available' ? 'bg-green-600' : 'bg-red-600';
+  const [status, setStatus] = useState(result.status);
+  const bgClass = status === 'Available' ? 'bg-green-600' : 'bg-red-600';
 
   return (
     <div
@@ -26,6 +31,7 @@ export function ResultCard({ result }: ResultCardProps) {
       ) : (
         <p className="text-2xl font-semibold">Lokasi rak belum ditentukan</p>
       )}
+      <StatusToggleButton caseId={result.id} currentStatus={status} onToggled={setStatus} />
     </div>
   );
 }

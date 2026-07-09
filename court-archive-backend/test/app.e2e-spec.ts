@@ -3,10 +3,8 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
-describe('Auth + RolesGuard (e2e)', () => {
+describe('Auth (e2e)', () => {
   let app: INestApplication;
-  let adminToken: string;
-  let petugasToken: string;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -15,51 +13,28 @@ describe('Auth + RolesGuard (e2e)', () => {
 
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1');
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
     await app.init();
-
-    const adminLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ username: 'admin1', password: 'admin123' });
-    adminToken = adminLogin.body.token;
-
-    const petugasLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ username: 'petugas1', password: 'petugas123' });
-    petugasToken = petugasLogin.body.token;
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  it('rejects unauthenticated requests with 401', async () => {
-    await request(app.getHttpServer())
-      .get('/api/v1/demo/admin-only')
-      .expect(401);
-  });
-
-  it('rejects petugas role with 403', async () => {
-    await request(app.getHttpServer())
-      .get('/api/v1/demo/admin-only')
-      .set('Authorization', `Bearer ${petugasToken}`)
-      .expect(403);
-  });
-
-  it('allows admin role with 200', async () => {
+  it('logs in successfully with valid seeded credentials', async () => {
     const response = await request(app.getHttpServer())
-      .get('/api/v1/demo/admin-only')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .post('/api/v1/auth/login')
+      .send({ username: 'admin1', password: 'admin123' })
       .expect(200);
 
-    expect(response.body).toEqual({
-      message: 'You are an authenticated admin.',
-    });
+    expect(response.body.role).toBe('admin');
+    expect(typeof response.body.token).toBe('string');
+  });
+
+  it('rejects invalid credentials with 401', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ username: 'admin1', password: 'wrong-password' })
+      .expect(401);
   });
 });

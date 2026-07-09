@@ -8,16 +8,17 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ onSearch }: SearchBarProps) {
-  const { isSupported, isListening, transcript, start } = useSpeechRecognition();
+  const { isSupported, isListening, transcript, resultSequence, start } =
+    useSpeechRecognition();
   const [textValue, setTextValue] = useState('');
-  const lastSubmittedTranscript = useRef('');
+  const lastSubmittedSequence = useRef(0);
 
   useEffect(() => {
-    if (transcript && transcript !== lastSubmittedTranscript.current) {
-      lastSubmittedTranscript.current = transcript;
+    if (transcript && resultSequence !== lastSubmittedSequence.current) {
+      lastSubmittedSequence.current = resultSequence;
       onSearch(transcript);
     }
-  }, [transcript, onSearch]);
+  }, [transcript, resultSequence, onSearch]);
 
   function handleTextSubmit(event: FormEvent) {
     event.preventDefault();

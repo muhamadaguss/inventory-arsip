@@ -20,6 +20,7 @@ interface UseSpeechRecognitionResult {
   isSupported: boolean;
   isListening: boolean;
   transcript: string;
+  resultSequence: number;
   start: () => void;
   stop: () => void;
   _instance: SpeechRecognitionLike | null;
@@ -29,6 +30,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
   const [isSupported, setIsSupported] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [resultSequence, setResultSequence] = useState(0);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
@@ -57,6 +59,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
     instance.onresult = (event) => {
       const result = event.results[0][0].transcript;
       setTranscript(result);
+      setResultSequence((prev) => prev + 1);
     };
     instance.onend = () => {
       setIsListening(false);
@@ -76,6 +79,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
     isSupported,
     isListening,
     transcript,
+    resultSequence,
     start,
     stop,
     _instance: recognitionRef.current,

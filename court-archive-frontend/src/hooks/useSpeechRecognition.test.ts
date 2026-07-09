@@ -60,6 +60,29 @@ describe('useSpeechRecognition', () => {
     expect(result.current.transcript).toBe('cari perkara pidana nomor lima');
   });
 
+  it('increments resultSequence even when the same transcript is spoken twice in a row', () => {
+    (window as unknown as Record<string, unknown>).SpeechRecognition = MockSpeechRecognition;
+
+    const { result } = renderHook(() => useSpeechRecognition());
+
+    act(() => {
+      result.current.start();
+    });
+    const instance = (result.current as unknown as { _instance: MockSpeechRecognition })._instance;
+
+    act(() => {
+      instance.onresult?.({ results: [[{ transcript: 'cari budi' }]] });
+    });
+    const firstSequence = result.current.resultSequence;
+
+    act(() => {
+      instance.onresult?.({ results: [[{ transcript: 'cari budi' }]] });
+    });
+
+    expect(result.current.transcript).toBe('cari budi');
+    expect(result.current.resultSequence).toBe(firstSequence + 1);
+  });
+
   it('stops listening on stop()', () => {
     (window as unknown as Record<string, unknown>).SpeechRecognition = MockSpeechRecognition;
 

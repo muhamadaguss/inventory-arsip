@@ -6,12 +6,14 @@ const mockStart = jest.fn();
 const mockStop = jest.fn();
 let mockIsSupported = true;
 let mockTranscript = '';
+let mockResultSequence = 0;
 
 jest.mock('@/hooks/useSpeechRecognition', () => ({
   useSpeechRecognition: () => ({
     isSupported: mockIsSupported,
     isListening: false,
     transcript: mockTranscript,
+    resultSequence: mockResultSequence,
     start: mockStart,
     stop: mockStop,
   }),
@@ -21,6 +23,7 @@ describe('SearchBar', () => {
   beforeEach(() => {
     mockIsSupported = true;
     mockTranscript = '';
+    mockResultSequence = 0;
     mockStart.mockClear();
   });
 
@@ -37,9 +40,24 @@ describe('SearchBar', () => {
 
   it('calls onSearch with the transcript once captured', () => {
     mockTranscript = 'cari budi';
+    mockResultSequence = 1;
     const onSearch = jest.fn();
     render(<SearchBar onSearch={onSearch} />);
     expect(onSearch).toHaveBeenCalledWith('cari budi');
+  });
+
+  it('calls onSearch again when the identical phrase is spoken twice in a row', () => {
+    mockTranscript = 'cari budi';
+    mockResultSequence = 1;
+    const onSearch = jest.fn();
+    const { rerender } = render(<SearchBar onSearch={onSearch} />);
+    expect(onSearch).toHaveBeenCalledTimes(1);
+
+    mockResultSequence = 2;
+    rerender(<SearchBar onSearch={onSearch} />);
+
+    expect(onSearch).toHaveBeenCalledTimes(2);
+    expect(onSearch).toHaveBeenLastCalledWith('cari budi');
   });
 
   it('renders a text input instead of a mic button when unsupported', () => {

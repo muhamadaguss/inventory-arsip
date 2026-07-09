@@ -191,7 +191,9 @@ LIMIT 5;
 - **Description:** Standard CRUD for individual case records and shelf layout.
 - **Access:** Admin only.
 
-#### `POST /api/v1/archive/import`
+#### `POST /api/v1/archive/cases/import`
+
+_(Note: nested under `cases` rather than a standalone `archive/import` path — it lives on the same controller as the rest of case CRUD, since import is fundamentally a bulk-create of `court_cases` rows. No separate controller exists solely for this one route.)_
 
 - **Description:** Bulk-imports case records from an uploaded CSV/Excel file for initial data migration. Rows are validated (case number present, shelf reference resolvable); failing rows are collected and returned, not silently dropped — the rest of the batch still commits.
 - **Access:** Admin only.

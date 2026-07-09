@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NumberWordsService } from './number-words.service';
 import { CaseTypeLookupService } from './case-type-lookup.service';

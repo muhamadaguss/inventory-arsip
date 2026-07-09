@@ -26,11 +26,11 @@ describe('LoginForm', () => {
     });
     const store = renderWithStore();
 
-    await userEvent.type(screen.getByLabelText(/username/i), 'petugas1');
-    await userEvent.type(screen.getByLabelText(/password/i), 'petugas123');
+    await userEvent.type(screen.getByLabelText(/username/i), 'testuser');
+    await userEvent.type(screen.getByLabelText(/password/i), 'testpass');
     await userEvent.click(screen.getByRole('button', { name: /masuk/i }));
 
-    expect(apiClient.login).toHaveBeenCalledWith('petugas1', 'petugas123');
+    expect(apiClient.login).toHaveBeenCalledWith('testuser', 'testpass');
     expect(store.getState().auth).toEqual({ token: 'abc123', role: 'petugas' });
   });
 

@@ -11,14 +11,14 @@ describe('apiClient.login', () => {
       json: async () => ({ token: 'abc123', role: 'petugas' }),
     });
 
-    const result = await login('petugas1', 'petugas123');
+    const result = await login('testuser', 'testpass');
 
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/auth/login'),
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ username: 'petugas1', password: 'petugas123' }),
+        body: JSON.stringify({ username: 'testuser', password: 'testpass' }),
       }),
     );
     expect(result).toEqual({ token: 'abc123', role: 'petugas' });

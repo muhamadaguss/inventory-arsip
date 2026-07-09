@@ -60,3 +60,63 @@ describe('SearchService.extractKeywords', () => {
     expect(result).toEqual({ year: null, caseType: null, caseNumber: null, nameTokens: [] });
   });
 });
+
+describe('SearchService.findMatches', () => {
+  let service: SearchService;
+  let prisma: { $queryRaw: jest.Mock };
+
+  beforeEach(async () => {
+    prisma = { $queryRaw: jest.fn() };
+
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        SearchService,
+        NumberWordsService,
+        CaseTypeLookupService,
+        { provide: PrismaService, useValue: prisma },
+      ],
+    }).compile();
+
+    service = moduleRef.get(SearchService);
+  });
+
+  it('queries with the party name and returns mapped rows', async () => {
+    const dbRow = {
+      id: 1,
+      caseNumberRaw: '45/Pid.B/2026/PN.Bks',
+      caseType: 'Pid.B',
+      year: 2026,
+      partiesInvolved: 'Ahmad Subarjo',
+      status: 'Available',
+      rackName: 'Rak 4',
+      rowNumber: 2,
+      filePositionNumber: '05',
+    };
+    prisma.$queryRaw.mockResolvedValue([dbRow]);
+
+    const result = await service.findMatches({
+      year: 2026,
+      caseType: 'Pid.B',
+      caseNumber: 45,
+      nameTokens: ['ahmad'],
+    });
+
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(result).toEqual([dbRow]);
+  });
+
+  it('returns an empty array when no keywords were extracted at all', async () => {
+    const result = await service.findMatches({ year: null, caseType: null, caseNumber: null, nameTokens: [] });
+
+    expect(result).toEqual([]);
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('returns an empty array when the query finds no rows', async () => {
+    prisma.$queryRaw.mockResolvedValue([]);
+
+    const result = await service.findMatches({ year: null, caseType: null, caseNumber: null, nameTokens: ['zzzznotfound'] });
+
+    expect(result).toEqual([]);
+  });
+});

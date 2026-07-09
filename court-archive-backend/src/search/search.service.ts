@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NumberWordsService } from './number-words.service';
 import { CaseTypeLookupService } from './case-type-lookup.service';
@@ -19,6 +20,18 @@ export interface ExtractedKeywords {
   caseType: string | null;
   caseNumber: number | null;
   nameTokens: string[];
+}
+
+export interface CaseMatch {
+  id: number;
+  caseNumberRaw: string;
+  caseType: string;
+  year: number;
+  partiesInvolved: string;
+  status: 'Available' | 'Borrowed';
+  rackName: string | null;
+  rowNumber: number | null;
+  filePositionNumber: string | null;
 }
 
 @Injectable()
@@ -95,5 +108,42 @@ export class SearchService {
       year: yearCandidates[0] ?? null,
       caseNumber: nonYearCandidates[0] ?? null,
     };
+  }
+
+  async findMatches(keywords: ExtractedKeywords): Promise<CaseMatch[]> {
+    const nameQuery = keywords.nameTokens.join(' ');
+    const hasAnyKeyword = keywords.year !== null || keywords.caseType !== null || keywords.caseNumber !== null || nameQuery.length > 0;
+
+    if (!hasAnyKeyword) {
+      return [];
+    }
+
+    const numberQuery = keywords.caseNumber !== null ? String(keywords.caseNumber) : '';
+
+    const rows = await this.prisma.$queryRaw<CaseMatch[]>`
+      SELECT
+        c.id, c.case_number_raw AS "caseNumberRaw", c.case_type AS "caseType",
+        c.year, c.parties_involved AS "partiesInvolved", c.status,
+        s.rack_name AS "rackName", s.row_number AS "rowNumber", c.file_position_number AS "filePositionNumber"
+      FROM court_cases c
+      LEFT JOIN shelves s ON c.shelf_id = s.id
+      WHERE
+        (${keywords.caseType}::text IS NULL OR c.case_type = ${keywords.caseType})
+        AND (${keywords.year}::int IS NULL OR c.year = ${keywords.year})
+        AND (
+          ${numberQuery} = '' OR similarity(c.case_number_clean, ${numberQuery}) > 0.3
+        )
+        AND (
+          ${nameQuery} = '' OR similarity(c.parties_involved, ${nameQuery}) > 0.3
+        )
+      ORDER BY
+        (
+          CASE WHEN ${numberQuery} = '' THEN 0 ELSE similarity(c.case_number_clean, ${numberQuery}) END
+          + CASE WHEN ${nameQuery} = '' THEN 0 ELSE similarity(c.parties_involved, ${nameQuery}) END
+        ) DESC
+      LIMIT 5
+    `;
+
+    return rows;
   }
 }

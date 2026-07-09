@@ -144,5 +144,11 @@ describe('CasesController', () => {
 
       await expect(controller.importCases(file)).rejects.toThrow('Unsupported file type');
     });
+
+    it('throws BadRequestException when no file is uploaded', async () => {
+      await expect(controller.importCases(undefined as unknown as Express.Multer.File)).rejects.toThrow(
+        'No file uploaded',
+      );
+    });
   });
 });

@@ -76,6 +76,10 @@ export class CasesController {
   @Roles('admin')
   @UseInterceptors(FileInterceptor('file'))
   async importCases(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
     const isCsv = file.mimetype === 'text/csv';
     const isExcel = file.mimetype === EXCEL_MIMETYPE;
 

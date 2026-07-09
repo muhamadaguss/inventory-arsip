@@ -4,7 +4,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NumberWordsService } from './number-words.service';
 import { CaseTypeLookupService } from './case-type-lookup.service';
 
-const STOPWORDS = new Set(['tolong', 'cari', 'arsip', 'nomor', 'perkara', 'atas', 'nama']);
+const STOPWORDS = new Set([
+  'tolong',
+  'cari',
+  'arsip',
+  'nomor',
+  'perkara',
+  'atas',
+  'nama',
+]);
 
 // 'tahun' is not stripped up front: it marks the boundary between a case
 // number and a year (e.g. "nomor empat puluh lima tahun dua ribu dua puluh
@@ -90,7 +98,10 @@ export class SearchService {
     return { year, caseType, caseNumber, nameTokens };
   }
 
-  private disambiguateNumbers(numbers: number[]): { year: number | null; caseNumber: number | null } {
+  private disambiguateNumbers(numbers: number[]): {
+    year: number | null;
+    caseNumber: number | null;
+  } {
     if (numbers.length === 0) {
       return { year: null, caseNumber: null };
     }
@@ -112,13 +123,18 @@ export class SearchService {
 
   async findMatches(keywords: ExtractedKeywords): Promise<CaseMatch[]> {
     const nameQuery = keywords.nameTokens.join(' ');
-    const hasAnyKeyword = keywords.year !== null || keywords.caseType !== null || keywords.caseNumber !== null || nameQuery.length > 0;
+    const hasAnyKeyword =
+      keywords.year !== null ||
+      keywords.caseType !== null ||
+      keywords.caseNumber !== null ||
+      nameQuery.length > 0;
 
     if (!hasAnyKeyword) {
       return [];
     }
 
-    const numberQuery = keywords.caseNumber !== null ? String(keywords.caseNumber) : '';
+    const numberQuery =
+      keywords.caseNumber !== null ? String(keywords.caseNumber) : '';
 
     const rows = await this.prisma.$queryRaw<CaseMatch[]>`
       SELECT
@@ -145,5 +161,48 @@ export class SearchService {
     `;
 
     return rows;
+  }
+
+  buildTtsPayload(matches: CaseMatch[]): string {
+    if (matches.length === 0) {
+      return 'Arsip tidak ditemukan.';
+    }
+
+    if (matches.length > 1) {
+      const countWord = this.numberWords.toWords(matches.length);
+      return `Ditemukan ${countWord} arsip. Mohon sebutkan detail yang lebih spesifik.`;
+    }
+
+    const match = matches[0];
+    const caseNumberDigits = match.caseNumberRaw.split('/')[0];
+    const caseNumberWords = /^\d+$/.test(caseNumberDigits)
+      ? this.numberWords.toWords(Number(caseNumberDigits))
+      : caseNumberDigits;
+    const yearWords = this.numberWords.toWords(match.year);
+
+    const summary = `Arsip ditemukan. Perkara ${match.caseType} nomor ${caseNumberWords} tahun ${yearWords}.`;
+
+    if (match.rackName === null || match.rowNumber === null) {
+      return `${summary} Lokasi rak belum ditentukan.`;
+    }
+
+    const rowWords = this.numberWords.toWords(match.rowNumber);
+    const positionWords = this.filePositionToWords(match.filePositionNumber);
+
+    return `${summary} Berada di ${match.rackName}, Baris ${rowWords}, nomor arsip ${positionWords}.`;
+  }
+
+  private filePositionToWords(filePosition: string | null): string {
+    if (filePosition === null) {
+      return 'tidak diketahui';
+    }
+    const digits = filePosition.replace(/\D/g, '');
+    if (!digits) {
+      return filePosition;
+    }
+    return digits
+      .split('')
+      .map((digit) => this.numberWords.toWords(Number(digit)))
+      .join(' ');
   }
 }

@@ -48,7 +48,9 @@ describe('SearchService.extractKeywords', () => {
   });
 
   it('treats a lone 4-digit-range number as year when it is the only number found', () => {
-    const result = service.extractKeywords('cari perkara tahun dua ribu dua puluh enam');
+    const result = service.extractKeywords(
+      'cari perkara tahun dua ribu dua puluh enam',
+    );
 
     expect(result.year).toBe(2026);
     expect(result.caseNumber).toBeNull();
@@ -57,7 +59,12 @@ describe('SearchService.extractKeywords', () => {
   it('returns all-null/empty for an empty transcript', () => {
     const result = service.extractKeywords('');
 
-    expect(result).toEqual({ year: null, caseType: null, caseNumber: null, nameTokens: [] });
+    expect(result).toEqual({
+      year: null,
+      caseType: null,
+      caseNumber: null,
+      nameTokens: [],
+    });
   });
 });
 
@@ -106,7 +113,12 @@ describe('SearchService.findMatches', () => {
   });
 
   it('returns an empty array when no keywords were extracted at all', async () => {
-    const result = await service.findMatches({ year: null, caseType: null, caseNumber: null, nameTokens: [] });
+    const result = await service.findMatches({
+      year: null,
+      caseType: null,
+      caseNumber: null,
+      nameTokens: [],
+    });
 
     expect(result).toEqual([]);
     expect(prisma.$queryRaw).not.toHaveBeenCalled();
@@ -115,8 +127,66 @@ describe('SearchService.findMatches', () => {
   it('returns an empty array when the query finds no rows', async () => {
     prisma.$queryRaw.mockResolvedValue([]);
 
-    const result = await service.findMatches({ year: null, caseType: null, caseNumber: null, nameTokens: ['zzzznotfound'] });
+    const result = await service.findMatches({
+      year: null,
+      caseType: null,
+      caseNumber: null,
+      nameTokens: ['zzzznotfound'],
+    });
 
     expect(result).toEqual([]);
+  });
+});
+
+describe('SearchService.buildTtsPayload', () => {
+  let service: SearchService;
+
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        SearchService,
+        NumberWordsService,
+        CaseTypeLookupService,
+        { provide: PrismaService, useValue: { $queryRaw: jest.fn() } },
+      ],
+    }).compile();
+
+    service = moduleRef.get(SearchService);
+  });
+
+  const singleMatch = {
+    id: 1,
+    caseNumberRaw: '45/Pid.B/2026/PN.Bks',
+    caseType: 'Pid.B',
+    year: 2026,
+    partiesInvolved: 'Ahmad Subarjo',
+    status: 'Available' as const,
+    rackName: 'Rak 4',
+    rowNumber: 2,
+    filePositionNumber: '05',
+  };
+
+  it('states not found when there are zero matches', () => {
+    const payload = service.buildTtsPayload([]);
+    expect(payload).toBe('Arsip tidak ditemukan.');
+  });
+
+  it('states the full location when there is exactly one match', () => {
+    const payload = service.buildTtsPayload([singleMatch]);
+    expect(payload).toBe(
+      'Arsip ditemukan. Perkara Pid.B nomor empat puluh lima tahun dua ribu dua puluh enam. Berada di Rak 4, Baris dua, nomor arsip kosong lima.',
+    );
+  });
+
+  it('states the count and asks for more detail when there are multiple matches', () => {
+    const payload = service.buildTtsPayload([singleMatch, { ...singleMatch, id: 2 }]);
+    expect(payload).toBe('Ditemukan dua arsip. Mohon sebutkan detail yang lebih spesifik.');
+  });
+
+  it('handles a match with no shelf assigned', () => {
+    const payload = service.buildTtsPayload([{ ...singleMatch, rackName: null, rowNumber: null, filePositionNumber: null }]);
+    expect(payload).toBe(
+      'Arsip ditemukan. Perkara Pid.B nomor empat puluh lima tahun dua ribu dua puluh enam. Lokasi rak belum ditentukan.',
+    );
   });
 });

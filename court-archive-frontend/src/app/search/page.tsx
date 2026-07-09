@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { ResultCard } from '@/components/ResultCard';
 import { SearchBar } from '@/components/SearchBar';
 import { post } from '@/lib/apiClient';
 import { searchStart, searchSuccess, searchFailure } from '@/store/searchSlice';
@@ -12,6 +13,7 @@ import type { RootState } from '@/store/store';
 export default function SearchPage() {
   const dispatch = useDispatch();
   const token = useSelector((state: RootState) => state.auth.token);
+  const results = useSelector((state: RootState) => state.search.results);
 
   const handleSearch = useCallback(
     async (transcript: string) => {
@@ -35,6 +37,11 @@ export default function SearchPage() {
       <main className="flex min-h-screen flex-col items-center p-6 gap-8">
         <h1 className="text-2xl font-bold">Cari Arsip</h1>
         <SearchBar onSearch={handleSearch} />
+        <div className="flex flex-col items-center gap-4 w-full">
+          {results.map((result) => (
+            <ResultCard key={result.id} result={result} />
+          ))}
+        </div>
       </main>
     </ProtectedRoute>
   );

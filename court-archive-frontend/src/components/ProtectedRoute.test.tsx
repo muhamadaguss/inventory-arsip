@@ -12,7 +12,7 @@ jest.mock('next/navigation', () => ({
 function renderWithAuth(token: string | null) {
   const store = configureStore({
     reducer: { auth: authReducer },
-    preloadedState: { auth: { token, role: token ? 'petugas' : null } },
+    preloadedState: { auth: { token, role: token ? ('petugas' as const) : null } },
   });
   return render(
     <Provider store={store}>
